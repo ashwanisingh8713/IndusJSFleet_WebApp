@@ -152,3 +152,35 @@ data class MaintenanceCostSummary(
     @SerialName("maintenance_count") val maintenanceCount: Int = 0
 )
 
+/**
+ * Trip Costs List Response
+ */
+@Serializable
+data class TripCostsListResponse(
+    val costs: List<TripCost> = emptyList(),
+    @SerialName("total_cost") val totalCost: Double = 0.0,
+    @SerialName("filtered_total") val filteredTotal: Double = 0.0,
+    @SerialName("cost_by_type") val costByType: Map<String, Double>? = null,
+    val count: Int = 0,
+    val page: Int = 1,
+    @SerialName("per_page") val perPage: Int = 10,
+    @SerialName("total_pages") val totalPages: Int = 1,
+    @SerialName("has_more") val hasMore: Boolean = false
+)
+
+/**
+ * Maintenance Costs List Response
+ */
+@Serializable
+data class MaintenanceCostsListResponse(
+    val costs: List<MaintenanceCost> = emptyList(),
+    @SerialName("total_cost") val totalCost: Double = 0.0,
+    @SerialName("filtered_total") val filteredTotal: Double = 0.0,
+    @SerialName("cost_by_type") val costByType: Map<String, Double>? = null,
+    val count: Int = 0,
+    val page: Int = 1,
+    @SerialName("per_page") val perPage: Int = 10,
+    @SerialName("total_pages") val totalPages: Int = 1,
+    @SerialName("has_more") val hasMore: Boolean = false
+)
+

@@ -120,14 +120,14 @@ fun SignupPage() {
                 label = "First Name",
                 value = firstName,
                 onValueChange = { firstName = it },
-                placeholder = "John",
+                placeholder = "Enter first name",
                 modifier = Modifier.weight(1f)
             )
             FormInput(
                 label = "Last Name",
                 value = lastName,
                 onValueChange = { lastName = it },
-                placeholder = "Doe",
+                placeholder = "Enter last name",
                 modifier = Modifier.weight(1f)
             )
         }
@@ -137,7 +137,7 @@ fun SignupPage() {
             value = email,
             onValueChange = { email = it },
             type = InputType.Email,
-            placeholder = "john@example.com"
+            placeholder = "Enter email address"
         )
 
         FormInput(
@@ -145,7 +145,7 @@ fun SignupPage() {
             value = mobile,
             onValueChange = { mobile = it },
             type = InputType.Tel,
-            placeholder = "9876543210"
+            placeholder = "Enter mobile number"
         )
 
         FormInput(
@@ -153,7 +153,7 @@ fun SignupPage() {
             value = password,
             onValueChange = { password = it },
             type = InputType.Password,
-            placeholder = "Min 6 characters"
+            placeholder = "Enter password (min 6 characters)"
         )
 
         FormInput(
@@ -161,7 +161,7 @@ fun SignupPage() {
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
             type = InputType.Password,
-            placeholder = "Confirm password"
+            placeholder = "Re-enter password"
         )
 
         PrimaryButton(

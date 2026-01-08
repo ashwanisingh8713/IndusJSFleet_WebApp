@@ -16,6 +16,7 @@ import com.varabyte.kobweb.core.Page
 import com.varabyte.kobweb.core.rememberPageContext
 import com.varabyte.kobweb.silk.components.icons.fa.*
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
 
@@ -28,6 +29,21 @@ fun DriversPage() {
     var drivers by remember { mutableStateOf<List<Driver>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    // Filtered drivers based on search
+    val filteredDrivers = remember(drivers, searchQuery) {
+        if (searchQuery.isBlank()) {
+            drivers
+        } else {
+            drivers.filter { driver ->
+                driver.firstName.contains(searchQuery, ignoreCase = true) ||
+                driver.lastName.contains(searchQuery, ignoreCase = true) ||
+                driver.mobile.contains(searchQuery, ignoreCase = true) ||
+                driver.licenseNumber.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (!AuthService.isLoggedIn()) {
@@ -56,28 +72,65 @@ fun DriversPage() {
         onNavigate = { ctx.router.navigateTo(it) },
         currentRoute = "/drivers"
     ) {
+        // Header with Search and Add button
         Row(
             modifier = Modifier.fillMaxWidth().margin(bottom = 24.px),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Span(attrs = Modifier.fontSize(20.px).fontWeight(FontWeight.SemiBold).color(ThemeColors.textPrimary).toAttrs()) {
-                Text("All Drivers (${drivers.size})")
+                Text("All Drivers (${filteredDrivers.size})")
             }
 
-            Button(
-                attrs = Modifier
-                    .backgroundColor(ThemeColors.primary)
-                    .color(Color.white)
-                    .padding(10.px, 20.px)
-                    .borderRadius(8.px)
-                    .border(0.px)
-                    .cursor(Cursor.Pointer)
-                    .onClick { ctx.router.navigateTo("/drivers/new") }
-                    .toAttrs()
-            ) {
-                FaPlus(modifier = Modifier.margin(right = 8.px))
-                Text("Add Driver")
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.gap(12.px)) {
+                // Search Box
+                Row(
+                    modifier = Modifier
+                        .backgroundColor(ThemeColors.surface)
+                        .border(1.px, LineStyle.Solid, ThemeColors.border)
+                        .borderRadius(8.px)
+                        .padding(8.px, 12.px),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FaMagnifyingGlass(modifier = Modifier.color(ThemeColors.textMuted).margin(right = 8.px), size = IconSize.SM)
+                    Input(InputType.Text) {
+                        value(searchQuery)
+                        onInput { searchQuery = it.value }
+                        style {
+                            property("border", "none")
+                            property("outline", "none")
+                            property("background", "transparent")
+                            width(200.px)
+                            fontSize(14.px)
+                            color(ThemeColors.textPrimary.toString())
+                        }
+                        attr("placeholder", "Search drivers...")
+                    }
+                    if (searchQuery.isNotBlank()) {
+                        FaXmark(
+                            modifier = Modifier
+                                .color(ThemeColors.textMuted)
+                                .cursor(Cursor.Pointer)
+                                .onClick { searchQuery = "" },
+                            size = IconSize.SM
+                        )
+                    }
+                }
+
+                Button(
+                    attrs = Modifier
+                        .backgroundColor(ThemeColors.primary)
+                        .color(Color.white)
+                        .padding(10.px, 20.px)
+                        .borderRadius(8.px)
+                        .border(0.px)
+                        .cursor(Cursor.Pointer)
+                        .onClick { ctx.router.navigateTo("/drivers/new") }
+                        .toAttrs()
+                ) {
+                    FaPlus(modifier = Modifier.margin(right = 8.px))
+                    Text("Add Driver")
+                }
             }
         }
 
@@ -91,11 +144,11 @@ fun DriversPage() {
             ) {
                 Text("Error: $error")
             }
-        } else if (drivers.isEmpty()) {
+        } else if (filteredDrivers.isEmpty()) {
             EmptyState(
                 icon = { FaIdCard(modifier = it) },
-                title = "No Drivers Yet",
-                message = "Add your first driver to manage your team"
+                title = if (searchQuery.isBlank()) "No Drivers Yet" else "No Results Found",
+                message = if (searchQuery.isBlank()) "Add your first driver to manage your team" else "Try adjusting your search"
             )
         } else {
             Div(
@@ -109,7 +162,7 @@ fun DriversPage() {
                         }
                     }
             ) {
-                drivers.forEach { driver ->
+                filteredDrivers.forEach { driver ->
                     DriverCard(driver) { ctx.router.navigateTo("/drivers/${driver.id}") }
                 }
             }

@@ -17,26 +17,19 @@ import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.core.Page
 import com.varabyte.kobweb.core.rememberPageContext
 import com.varabyte.kobweb.silk.components.icons.fa.*
-import com.varabyte.kobweb.silk.style.CssStyle
-import com.varabyte.kobweb.silk.style.toModifier
+import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
+import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
-
-val StatCardStyle = CssStyle {
-    base {
-        Modifier
-            .backgroundColor(Color.white) // Will be overridden inline
-            .borderRadius(12.px)
-            .padding(20.px)
-    }
-}
 
 @Page("/dashboard")
 @Composable
 fun DashboardPage() {
     val ctx = rememberPageContext()
     val scope = rememberCoroutineScope()
+    val breakpoint = rememberBreakpoint()
+    val isMobile = breakpoint < Breakpoint.MD
 
     var dashboard by remember { mutableStateOf<Dashboard?>(null) }
     var isLoading by remember { mutableStateOf(true) }
@@ -93,21 +86,32 @@ fun DashboardPage() {
             }
         } else {
             dashboard?.let { data ->
-                // Stats Grid
-                StatsGrid(data.fleetOverview, data.todaySummary)
+                // Stats Grid - Responsive
+                StatsGrid(data.fleetOverview, data.todaySummary, isMobile)
 
-                // Quick Actions & Alerts
-                Row(
-                    modifier = Modifier.fillMaxWidth().margin(top = 24.px).gap(24.px)
-                ) {
-                    QuickActionsCard(
-                        onNavigate = { ctx.router.navigateTo(it) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    AlertsCard(
-                        alerts = data.alerts,
-                        modifier = Modifier.weight(1f)
-                    )
+                // Quick Actions & Alerts - Responsive
+                if (isMobile) {
+                    Column(modifier = Modifier.fillMaxWidth().margin(top = 16.px).gap(16.px)) {
+                        QuickActionsCard(
+                            onNavigate = { ctx.router.navigateTo(it) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        AlertsCard(
+                            alerts = data.alerts,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                } else {
+                    Row(modifier = Modifier.fillMaxWidth().margin(top = 24.px).gap(24.px)) {
+                        QuickActionsCard(
+                            onNavigate = { ctx.router.navigateTo(it) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        AlertsCard(
+                            alerts = data.alerts,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
@@ -115,79 +119,144 @@ fun DashboardPage() {
 }
 
 @Composable
-private fun StatsGrid(fleetOverview: FleetOverview?, todaySummary: TodaySummary?) {
-    // Row 1: Fleet Overview
-    Row(
-        modifier = Modifier.fillMaxWidth().gap(20.px)
-    ) {
-        StatCard(
-            title = "Total Vehicles",
-            value = fleetOverview?.totalVehicles?.toString() ?: "0",
-            subtitle = "${fleetOverview?.activeVehicles ?: 0} active",
-            color = ThemeColors.primary,
-            modifier = Modifier.weight(1f)
-        ) { FaTruck(modifier = it) }
+private fun StatsGrid(fleetOverview: FleetOverview?, todaySummary: TodaySummary?, isMobile: Boolean) {
+    if (isMobile) {
+        // Mobile: 2 columns grid
+        Column(modifier = Modifier.fillMaxWidth().gap(12.px)) {
+            // Row 1
+            Row(modifier = Modifier.fillMaxWidth().gap(12.px)) {
+                StatCard(
+                    title = "Vehicles",
+                    value = fleetOverview?.totalVehicles?.toString() ?: "0",
+                    subtitle = "${fleetOverview?.activeVehicles ?: 0} active",
+                    color = ThemeColors.primary,
+                    modifier = Modifier.weight(1f),
+                    compact = true
+                ) { FaTruck(modifier = it, size = IconSize.SM) }
 
-        StatCard(
-            title = "On Trip",
-            value = fleetOverview?.onTrip?.toString() ?: "0",
-            subtitle = "vehicles in transit",
-            color = ThemeColors.success,
-            modifier = Modifier.weight(1f)
-        ) { FaRoute(modifier = it) }
+                StatCard(
+                    title = "On Trip",
+                    value = fleetOverview?.onTrip?.toString() ?: "0",
+                    subtitle = "in transit",
+                    color = ThemeColors.success,
+                    modifier = Modifier.weight(1f),
+                    compact = true
+                ) { FaRoute(modifier = it, size = IconSize.SM) }
+            }
+            // Row 2
+            Row(modifier = Modifier.fillMaxWidth().gap(12.px)) {
+                StatCard(
+                    title = "Drivers",
+                    value = fleetOverview?.totalDrivers?.toString() ?: "0",
+                    subtitle = "${fleetOverview?.availableDrivers ?: 0} available",
+                    color = Color("#8b5cf6"),
+                    modifier = Modifier.weight(1f),
+                    compact = true
+                ) { FaIdCard(modifier = it, size = IconSize.SM) }
 
-        StatCard(
-            title = "Total Drivers",
-            value = fleetOverview?.totalDrivers?.toString() ?: "0",
-            subtitle = "${fleetOverview?.availableDrivers ?: 0} available",
-            color = Color("#8b5cf6"),
-            modifier = Modifier.weight(1f)
-        ) { FaIdCard(modifier = it) }
+                StatCard(
+                    title = "Maintenance",
+                    value = fleetOverview?.maintenance?.toString() ?: "0",
+                    subtitle = "under service",
+                    color = ThemeColors.warning,
+                    modifier = Modifier.weight(1f),
+                    compact = true
+                ) { FaWrench(modifier = it, size = IconSize.SM) }
+            }
+            // Row 3
+            Row(modifier = Modifier.fillMaxWidth().gap(12.px)) {
+                StatCard(
+                    title = "Revenue",
+                    value = FormatUtils.formatCurrency(todaySummary?.totalRevenue),
+                    subtitle = "today",
+                    color = ThemeColors.success,
+                    modifier = Modifier.weight(1f),
+                    compact = true
+                ) { FaIndianRupeeSign(modifier = it, size = IconSize.SM) }
 
-        StatCard(
-            title = "Maintenance",
-            value = fleetOverview?.maintenance?.toString() ?: "0",
-            subtitle = "under service",
-            color = ThemeColors.warning,
-            modifier = Modifier.weight(1f)
-        ) { FaWrench(modifier = it) }
-    }
+                StatCard(
+                    title = "Expenses",
+                    value = FormatUtils.formatCurrency(todaySummary?.totalExpenses),
+                    subtitle = "today",
+                    color = ThemeColors.error,
+                    modifier = Modifier.weight(1f),
+                    compact = true
+                ) { FaReceipt(modifier = it, size = IconSize.SM) }
+            }
+        }
+    } else {
+        // Desktop: 4 columns
+        Column(modifier = Modifier.fillMaxWidth().gap(20.px)) {
+            // Row 1: Fleet Overview
+            Row(modifier = Modifier.fillMaxWidth().gap(20.px)) {
+                StatCard(
+                    title = "Total Vehicles",
+                    value = fleetOverview?.totalVehicles?.toString() ?: "0",
+                    subtitle = "${fleetOverview?.activeVehicles ?: 0} active",
+                    color = ThemeColors.primary,
+                    modifier = Modifier.weight(1f)
+                ) { FaTruck(modifier = it) }
 
-    // Row 2: Today's Summary
-    Row(
-        modifier = Modifier.fillMaxWidth().margin(top = 20.px).gap(20.px)
-    ) {
-        StatCard(
-            title = "Today's Trips",
-            value = "${todaySummary?.tripsCompleted ?: 0}/${(todaySummary?.tripsPlanned ?: 0) + (todaySummary?.tripsInProgress ?: 0) + (todaySummary?.tripsCompleted ?: 0)}",
-            subtitle = "${todaySummary?.tripsInProgress ?: 0} in progress",
-            color = ThemeColors.primary,
-            modifier = Modifier.weight(1f)
-        ) { FaCalendarCheck(modifier = it) }
+                StatCard(
+                    title = "On Trip",
+                    value = fleetOverview?.onTrip?.toString() ?: "0",
+                    subtitle = "vehicles in transit",
+                    color = ThemeColors.success,
+                    modifier = Modifier.weight(1f)
+                ) { FaRoute(modifier = it) }
 
-        StatCard(
-            title = "Revenue",
-            value = FormatUtils.formatCurrency(todaySummary?.totalRevenue),
-            subtitle = "today's earnings",
-            color = ThemeColors.success,
-            modifier = Modifier.weight(1f)
-        ) { FaIndianRupeeSign(modifier = it) }
+                StatCard(
+                    title = "Total Drivers",
+                    value = fleetOverview?.totalDrivers?.toString() ?: "0",
+                    subtitle = "${fleetOverview?.availableDrivers ?: 0} available",
+                    color = Color("#8b5cf6"),
+                    modifier = Modifier.weight(1f)
+                ) { FaIdCard(modifier = it) }
 
-        StatCard(
-            title = "Expenses",
-            value = FormatUtils.formatCurrency(todaySummary?.totalExpenses),
-            subtitle = "today's costs",
-            color = ThemeColors.error,
-            modifier = Modifier.weight(1f)
-        ) { FaReceipt(modifier = it) }
+                StatCard(
+                    title = "Maintenance",
+                    value = fleetOverview?.maintenance?.toString() ?: "0",
+                    subtitle = "under service",
+                    color = ThemeColors.warning,
+                    modifier = Modifier.weight(1f)
+                ) { FaWrench(modifier = it) }
+            }
 
-        StatCard(
-            title = "Profit/Loss",
-            value = FormatUtils.formatCurrency(todaySummary?.profitLoss),
-            subtitle = if ((todaySummary?.profitLoss ?: 0.0) >= 0) "profit" else "loss",
-            color = if ((todaySummary?.profitLoss ?: 0.0) >= 0) ThemeColors.success else ThemeColors.error,
-            modifier = Modifier.weight(1f)
-        ) { FaChartLine(modifier = it) }
+            // Row 2: Today's Summary
+            Row(modifier = Modifier.fillMaxWidth().gap(20.px)) {
+                StatCard(
+                    title = "Today's Trips",
+                    value = "${todaySummary?.tripsCompleted ?: 0}/${(todaySummary?.tripsPlanned ?: 0) + (todaySummary?.tripsInProgress ?: 0) + (todaySummary?.tripsCompleted ?: 0)}",
+                    subtitle = "${todaySummary?.tripsInProgress ?: 0} in progress",
+                    color = ThemeColors.primary,
+                    modifier = Modifier.weight(1f)
+                ) { FaCalendarCheck(modifier = it) }
+
+                StatCard(
+                    title = "Revenue",
+                    value = FormatUtils.formatCurrency(todaySummary?.totalRevenue),
+                    subtitle = "today's earnings",
+                    color = ThemeColors.success,
+                    modifier = Modifier.weight(1f)
+                ) { FaIndianRupeeSign(modifier = it) }
+
+                StatCard(
+                    title = "Expenses",
+                    value = FormatUtils.formatCurrency(todaySummary?.totalExpenses),
+                    subtitle = "today's costs",
+                    color = ThemeColors.error,
+                    modifier = Modifier.weight(1f)
+                ) { FaReceipt(modifier = it) }
+
+                StatCard(
+                    title = "Profit/Loss",
+                    value = FormatUtils.formatCurrency(todaySummary?.profitLoss),
+                    subtitle = if ((todaySummary?.profitLoss ?: 0.0) >= 0) "profit" else "loss",
+                    color = if ((todaySummary?.profitLoss ?: 0.0) >= 0) ThemeColors.success else ThemeColors.error,
+                    modifier = Modifier.weight(1f)
+                ) { FaChartLine(modifier = it) }
+            }
+        }
     }
 }
 
@@ -198,13 +267,14 @@ private fun StatCard(
     subtitle: String,
     color: CSSColorValue,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
     icon: @Composable (Modifier) -> Unit
 ) {
     Box(
         modifier = modifier
             .backgroundColor(ThemeColors.surface)
-            .borderRadius(12.px)
-            .padding(20.px)
+            .borderRadius(if (compact) 10.px else 12.px)
+            .padding(if (compact) 14.px else 20.px)
             .boxShadow(BoxShadow.of(0.px, 1.px, 3.px, color = ThemeColors.cardShadow))
     ) {
         Row(
@@ -212,32 +282,32 @@ private fun StatCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Span(
-                    attrs = Modifier.fontSize(13.px).color(ThemeColors.textSecondary).toAttrs()
+                    attrs = Modifier.fontSize(if (compact) 11.px else 13.px).color(ThemeColors.textSecondary).toAttrs()
                 ) {
                     Text(title)
                 }
                 Span(
                     attrs = Modifier
-                        .fontSize(28.px)
+                        .fontSize(if (compact) 20.px else 28.px)
                         .fontWeight(FontWeight.Bold)
                         .color(ThemeColors.textPrimary)
-                        .margin(top = 4.px, bottom = 4.px)
+                        .margin(top = if (compact) 2.px else 4.px, bottom = if (compact) 2.px else 4.px)
                         .toAttrs()
                 ) {
                     Text(value)
                 }
                 Span(
-                    attrs = Modifier.fontSize(12.px).color(ThemeColors.textMuted).toAttrs()
+                    attrs = Modifier.fontSize(if (compact) 10.px else 12.px).color(ThemeColors.textMuted).toAttrs()
                 ) {
                     Text(subtitle)
                 }
             }
             Box(
                 modifier = Modifier
-                    .size(44.px)
-                    .borderRadius(10.px),
+                    .size(if (compact) 32.px else 44.px)
+                    .borderRadius(if (compact) 8.px else 10.px),
                 contentAlignment = Alignment.Center
             ) {
                 icon(Modifier.color(color))
@@ -269,10 +339,17 @@ private fun QuickActionsCard(
             Text("Quick Actions")
         }
 
+        // Row 1: Fleet Management
         Row(modifier = Modifier.fillMaxWidth().gap(12.px)) {
             QuickActionButton("Add Vehicle", ThemeColors.primary, onClick = { onNavigate("/vehicles/new") }) { FaTruck(modifier = it) }
             QuickActionButton("Add Driver", Color("#8b5cf6"), onClick = { onNavigate("/drivers/new") }) { FaUserPlus(modifier = it) }
             QuickActionButton("New Trip", ThemeColors.success, onClick = { onNavigate("/trips/new") }) { FaPlus(modifier = it) }
+        }
+
+        // Row 2: Cost Management
+        Row(modifier = Modifier.fillMaxWidth().gap(12.px).margin(top = 12.px)) {
+            QuickActionButton("Add Trip Cost", ThemeColors.warning, onClick = { onNavigate("/costs/trips/new") }) { FaReceipt(modifier = it) }
+            QuickActionButton("Add Maintenance", ThemeColors.error, onClick = { onNavigate("/costs/maintenance/new") }) { FaWrench(modifier = it) }
         }
     }
 }

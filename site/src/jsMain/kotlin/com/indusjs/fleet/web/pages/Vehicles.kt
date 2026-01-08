@@ -19,6 +19,7 @@ import com.varabyte.kobweb.silk.components.icons.fa.*
 import com.varabyte.kobweb.silk.style.CssStyle
 import com.varabyte.kobweb.silk.style.toModifier
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
 
@@ -31,6 +32,21 @@ fun VehiclesPage() {
     var vehicles by remember { mutableStateOf<List<Vehicle>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    // Filtered vehicles based on search
+    val filteredVehicles = remember(vehicles, searchQuery) {
+        if (searchQuery.isBlank()) {
+            vehicles
+        } else {
+            vehicles.filter { vehicle ->
+                vehicle.registrationNumber.contains(searchQuery, ignoreCase = true) ||
+                vehicle.vehicleType.contains(searchQuery, ignoreCase = true) ||
+                (vehicle.make?.contains(searchQuery, ignoreCase = true) == true) ||
+                (vehicle.model?.contains(searchQuery, ignoreCase = true) == true)
+            }
+        }
+    }
 
     // Check auth
     LaunchedEffect(Unit) {
@@ -60,29 +76,65 @@ fun VehiclesPage() {
         onNavigate = { ctx.router.navigateTo(it) },
         currentRoute = "/vehicles"
     ) {
-        // Header with Add button
+        // Header with Search and Add button
         Row(
             modifier = Modifier.fillMaxWidth().margin(bottom = 24.px),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Span(attrs = Modifier.fontSize(20.px).fontWeight(FontWeight.SemiBold).color(ThemeColors.textPrimary).toAttrs()) {
-                Text("All Vehicles (${vehicles.size})")
+                Text("All Vehicles (${filteredVehicles.size})")
             }
 
-            Button(
-                attrs = Modifier
-                    .backgroundColor(ThemeColors.primary)
-                    .color(Color.white)
-                    .padding(10.px, 20.px)
-                    .borderRadius(8.px)
-                    .border(0.px)
-                    .cursor(Cursor.Pointer)
-                    .onClick { ctx.router.navigateTo("/vehicles/new") }
-                    .toAttrs()
-            ) {
-                FaPlus(modifier = Modifier.margin(right = 8.px))
-                Text("Add Vehicle")
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.gap(12.px)) {
+                // Search Box
+                Row(
+                    modifier = Modifier
+                        .backgroundColor(ThemeColors.surface)
+                        .border(1.px, LineStyle.Solid, ThemeColors.border)
+                        .borderRadius(8.px)
+                        .padding(8.px, 12.px),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FaMagnifyingGlass(modifier = Modifier.color(ThemeColors.textMuted).margin(right = 8.px), size = IconSize.SM)
+                    Input(InputType.Text) {
+                        value(searchQuery)
+                        onInput { searchQuery = it.value }
+                        style {
+                            property("border", "none")
+                            property("outline", "none")
+                            property("background", "transparent")
+                            width(200.px)
+                            fontSize(14.px)
+                            color(ThemeColors.textPrimary.toString())
+                        }
+                        attr("placeholder", "Search vehicles...")
+                    }
+                    if (searchQuery.isNotBlank()) {
+                        FaXmark(
+                            modifier = Modifier
+                                .color(ThemeColors.textMuted)
+                                .cursor(Cursor.Pointer)
+                                .onClick { searchQuery = "" },
+                            size = IconSize.SM
+                        )
+                    }
+                }
+
+                Button(
+                    attrs = Modifier
+                        .backgroundColor(ThemeColors.primary)
+                        .color(Color.white)
+                        .padding(10.px, 20.px)
+                        .borderRadius(8.px)
+                        .border(0.px)
+                        .cursor(Cursor.Pointer)
+                        .onClick { ctx.router.navigateTo("/vehicles/new") }
+                        .toAttrs()
+                ) {
+                    FaPlus(modifier = Modifier.margin(right = 8.px))
+                    Text("Add Vehicle")
+                }
             }
         }
 
@@ -96,11 +148,11 @@ fun VehiclesPage() {
             ) {
                 Text("Error: $error")
             }
-        } else if (vehicles.isEmpty()) {
+        } else if (filteredVehicles.isEmpty()) {
             EmptyState(
                 icon = { FaTruck(modifier = it) },
-                title = "No Vehicles Yet",
-                message = "Add your first vehicle to start managing your fleet"
+                title = if (searchQuery.isBlank()) "No Vehicles Yet" else "No Results Found",
+                message = if (searchQuery.isBlank()) "Add your first vehicle to start managing your fleet" else "Try adjusting your search"
             )
         } else {
             // Vehicle Grid
@@ -115,7 +167,7 @@ fun VehiclesPage() {
                         }
                     }
             ) {
-                vehicles.forEach { vehicle ->
+                filteredVehicles.forEach { vehicle ->
                     VehicleCard(vehicle) { ctx.router.navigateTo("/vehicles/${vehicle.id}") }
                 }
             }
