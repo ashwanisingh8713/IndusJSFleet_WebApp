@@ -1,0 +1,9 @@
+Act as a professional Kotlin Kobweb Developer in `IndusJSFleet`
+I am developing Fleet Management Web app.
+Fleet_Management_API_v2.postman_collection.json is PostMan collection.
+
+Kindly review `Fleet_Management_API_v2.postman_collection.json`.
+
+Plan with best practices to implement all Screen and Pages and verify the all required apis for Web App.
+
+Plan it in best approach and best practice.

@@ -1,26 +1,31 @@
 package com.indusjs.fleet.web.pages
 
 import androidx.compose.runtime.*
+import com.indusjs.fleet.web.api.services.AuthService
 import com.varabyte.kobweb.compose.foundation.layout.Box
 import com.varabyte.kobweb.compose.ui.Alignment
 import com.varabyte.kobweb.compose.ui.Modifier
 import com.varabyte.kobweb.compose.ui.modifiers.fillMaxSize
 import com.varabyte.kobweb.core.Page
-import org.jetbrains.compose.web.css.vh
+import com.varabyte.kobweb.core.rememberPageContext
 import org.jetbrains.compose.web.dom.Text
-import com.varabyte.kobweb.worker.rememberWorker
-import com.indusjs.fleet.web.worker.EchoWorker
 
 @Page
 @Composable
 fun HomePage() {
-    val worker = rememberWorker { EchoWorker { output -> console.log("Echoed: $output") } }
+    val ctx = rememberPageContext()
+
+    // Redirect based on auth status
     LaunchedEffect(Unit) {
-        worker.postInput("Hello, worker!")
+        if (AuthService.isLoggedIn()) {
+            ctx.router.navigateTo("/dashboard")
+        } else {
+            ctx.router.navigateTo("/auth/login")
+        }
     }
 
-    // TODO: Replace the following with your own content
+    // Show loading while redirecting
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("THIS PAGE INTENTIONALLY LEFT BLANK")
+        Text("Loading...")
     }
 }
